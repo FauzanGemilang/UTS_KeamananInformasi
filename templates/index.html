@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}SecretPic — Home{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">IMAGE STEGANOGRAPHY</p>
+  <h1>Sembunyikan pesan di dalam gambar.</h1>
+  <p>SecretPic menggabungkan enkripsi pesan dan LSB steganography untuk demonstrasi keamanan informasi.</p>
+  <div class="actions">
+    <a class="button" href="{{ url_for('hide') }}">Sembunyikan Pesan</a>
+    <a class="button secondary" href="{{ url_for('extract') }}">Ekstrak Pesan</a>
+  </div>
+</section>
+<section class="grid three">
+  <article class="card"><h3>🔐 Enkripsi</h3><p>Pesan dienkripsi menggunakan AES-GCM sebelum disisipkan.</p></article>
+  <article class="card"><h3>🖼️ LSB</h3><p>Payload disisipkan pada least significant bit pixel.</p></article>
+  <article class="card"><h3>📊 Analisis</h3><p>MSE, PSNR, histogram, dan pengujian kapasitas.</p></article>
+</section>
+{% endblock %}

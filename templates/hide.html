@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Hide Message — SecretPic{% endblock %}
+
+{% block content %}
+
+<h1>Hide Message</h1>
+
+<p class="muted">
+  Gunakan PNG/BMP. Simpan stego image sebagai PNG agar data LSB
+  tidak rusak oleh kompresi lossy.
+</p>
+
+<!-- =========================================
+     FORM HIDE MESSAGE
+========================================= -->
+
+<form
+  method="post"
+  enctype="multipart/form-data"
+  class="card form"
+>
+
+  <!-- Upload gambar -->
+  <label>
+    Gambar
+    <input
+      type="file"
+      name="image"
+      accept=".png,.bmp,.jpg,.jpeg"
+      required
+    >
+  </label>
+
+  <!-- Pesan rahasia -->
+  <label>
+    Pesan rahasia
+
+    <textarea
+      name="message"
+      rows="6"
+      required
+      placeholder="Tulis pesan rahasia di sini..."
+    ></textarea>
+  </label>
+
+  <!-- Stego Key -->
+  <label>
+    Stego-key
+
+    <input
+      type="password"
+      name="key"
+      required
+      placeholder="Masukkan stego-key"
+    >
+  </label>
+
+  <!-- Tombol proses -->
+  <button
+    class="button"
+    type="submit"
+  >
+    🔐 Sisipkan Pesan
+  </button>
+
+</form>
+
+
+<!-- =========================================
+     HASIL STEGANOGRAFI
+========================================= -->
+
+{% if result %}
+
+<section class="card">
+
+  <h2>Hasil Steganografi</h2>
+
+  <div class="compare">
+
+    <!-- =====================================
+         STEGO IMAGE
+    ====================================== -->
+
+    <div>
+
+      <p><strong>Stego Image</strong></p>
+
+      <img
+        class="preview"
+        src="data:image/png;base64,{{ result.image_b64 }}"
+        alt="Stego Image"
+      >
+
+    </div>
+
+
+    <!-- =====================================
+         HASIL ANALISIS
+    ====================================== -->
+
+    <div>
+
+      <p>
+        <strong>MSE:</strong>
+        {{ "%.6f"|format(result.mse) }}
+      </p>
+
+      <p>
+        <strong>PSNR:</strong>
+        {{ "%.2f"|format(result.psnr) }}
+        dB
+      </p>
+
+      <p>
+        <strong>Kapasitas:</strong>
+        {{ result.capacity }}
+        byte
+      </p>
+
+      <p>
+        <strong>Payload:</strong>
+        {{ result.message_size }}
+        byte
+      </p>
+
+
+      <!-- ===================================
+           DOWNLOAD STEGO IMAGE
+
+           Download dilakukan langsung
+           melalui browser.
+      ==================================== -->
+
+      <a
+        class="button"
+        href="data:image/png;base64,{{ result.image_b64 }}"
+        download="{{ result.filename }}"
+      >
+        ⬇ Download Stego Image
+      </a>
+
+    </div>
+
+  </div>
+
+</section>
+
+{% endif %}
+
+{% endblock %}
