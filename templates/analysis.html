@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Analysis — SecretPic{% endblock %}
+{% block content %}
+<h1>Image Analysis</h1>
+<div class="grid two">
+  <article class="card"><h3>MSE</h3><p>Mean Squared Error mengukur rata-rata kuadrat perbedaan pixel.</p></article>
+  <article class="card"><h3>PSNR</h3><p>Peak Signal-to-Noise Ratio digunakan untuk menilai kualitas stego image.</p></article>
+</div>
+<div class="card">
+  <h2>Rencana Pengujian</h2>
+  <ul>
+    <li>Minimal 5 citra.</li>
+    <li>3 ukuran pesan.</li>
+    <li>Histogram cover vs stego.</li>
+    <li>Enhanced LSB.</li>
+    <li>Uji JPEG re-save.</li>
+    <li>Perbandingan 1-bit dan 2-bit LSB.</li>
+  </ul>
+</div>
+{% endblock %}
