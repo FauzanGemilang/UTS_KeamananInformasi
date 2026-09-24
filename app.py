@@ -26,7 +26,7 @@ app.secret_key = os.environ.get(
 )
 
 # Format gambar yang diperbolehkan
-ALLOWED = {"png", "bmp"}
+ALLOWED = {"png", "bmp", "jpg", "jpeg"}
 
 # Batas upload untuk menghindari request terlalu besar.
 # Disarankan tetap menggunakan gambar PNG/BMP berukuran wajar
