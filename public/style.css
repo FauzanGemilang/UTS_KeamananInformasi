@@ -10,13 +10,20 @@ body {
   line-height: 1.6;
 }
 
+
+/* =========================================
+   NAVIGATION
+========================================= */
+
 .nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 18px 7%;
   border-bottom: 1px solid #292B33;
-  background: #0D0E12;
+  background: rgba(13, 14, 18, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -44,12 +51,22 @@ body {
   color: #A855F7;
 }
 
+
+/* =========================================
+   MAIN CONTAINER
+========================================= */
+
 .container {
   max-width: 1100px;
   margin: 0 auto;
   padding: 50px 24px;
   min-height: 80vh;
 }
+
+
+/* =========================================
+   HERO
+========================================= */
 
 .hero {
   padding: 60px 0;
@@ -59,6 +76,7 @@ body {
   letter-spacing: 0.15em;
   color: #A855F7;
   font-weight: 700;
+  font-size: 0.85rem;
 }
 
 .hero h1 {
@@ -75,6 +93,11 @@ body {
   font-size: 1.1rem;
 }
 
+
+/* =========================================
+   BUTTONS
+========================================= */
+
 .actions {
   display: flex;
   gap: 12px;
@@ -83,7 +106,7 @@ body {
 
 .button {
   display: inline-block;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 10px;
   padding: 12px 18px;
   background: #7C3AED;
@@ -99,16 +122,27 @@ body {
   transform: translateY(-1px);
 }
 
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .button.secondary {
-  background: #1A1C23;
-  border: 1px solid #2C2F38;
+  background: #171820;
+  border: 1px solid #30313D;
   color: #E2E8F0;
 }
 
 .button.secondary:hover {
-  background: #242731;
+  background: #20212B;
   border-color: #7C3AED;
 }
+
+
+/* =========================================
+   GRID
+========================================= */
 
 .grid {
   display: grid;
@@ -123,18 +157,37 @@ body {
   grid-template-columns: repeat(2, 1fr);
 }
 
+
+/* =========================================
+   CARD
+========================================= */
+
 .card {
-  background: #1A1C23;
-  border: 1px solid #292B33;
+  background: rgba(26, 28, 35, 0.65);
+  border: 1px solid rgba(124, 58, 237, 0.12);
   border-radius: 16px;
   padding: 24px;
   margin: 18px 0;
-  transition: 0.25s ease;
+  transition: border-color 0.25s ease,
+              background 0.25s ease,
+              box-shadow 0.25s ease;
 }
 
 .card:hover {
-  border-color: rgba(124, 58, 237, 0.45);
+  border-color: rgba(124, 58, 237, 0.4);
+  background: rgba(26, 28, 35, 0.78);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
+
+.card h2,
+.card h3 {
+  color: #E2E8F0;
+}
+
+
+/* =========================================
+   FORM
+========================================= */
 
 .form {
   display: grid;
@@ -151,7 +204,8 @@ body {
 
 .form input,
 .form textarea {
-  background: #0D0E12;
+  width: 100%;
+  background: rgba(13, 14, 18, 0.7);
   color: #E2E8F0;
   border: 1px solid #30333C;
   border-radius: 9px;
@@ -172,18 +226,177 @@ body {
   color: #64748B;
 }
 
+.form textarea {
+  resize: vertical;
+}
+
+
+/* =========================================
+   IMAGE PREVIEW
+========================================= */
+
+.preview {
+  display: block;
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid #30333C;
+  background: transparent;
+}
+
+#image-preview-container {
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 12px;
+  background: rgba(13, 14, 18, 0.35);
+}
+
+#image-preview {
+  margin-top: 10px;
+}
+
+
+/* =========================================
+   IMAGE COMPARISON
+========================================= */
+
 .compare {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 25px;
+  align-items: start;
 }
 
-.preview {
+.compare > div {
+  min-width: 0;
+}
+
+.compare h3 {
+  margin-top: 0;
+}
+
+
+/* =========================================
+   STEGO RESULT
+========================================= */
+
+#result-section {
+  background: rgba(26, 28, 35, 0.55);
+  border-color: rgba(124, 58, 237, 0.2);
+}
+
+#stego-preview {
+  display: block;
   max-width: 100%;
+  max-height: 400px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto;
   border-radius: 12px;
   border: 1px solid #30333C;
-  background: #0D0E12;
+  background: transparent;
 }
+
+#result-section .compare > div:first-child {
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(13, 14, 18, 0.35);
+}
+
+#result-section .compare > div:last-child {
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(13, 14, 18, 0.25);
+}
+
+
+/* =========================================
+   RESULT INFORMATION
+========================================= */
+
+.image-info {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.info-item {
+  padding: 13px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 10px;
+  background: rgba(13, 14, 18, 0.4);
+  overflow-wrap: anywhere;
+}
+
+.info-label {
+  display: block;
+  font-size: 13px;
+  color: #94A3B8;
+  margin-bottom: 6px;
+}
+
+.info-value {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #E2E8F0;
+}
+
+
+/* =========================================
+   RESULT BUTTONS
+========================================= */
+
+.result-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.result-actions .button {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.download-button {
+  background: #7C3AED;
+  color: #FFFFFF;
+  border: 1px solid transparent;
+}
+
+.download-button:hover {
+  background: #A855F7;
+}
+
+.secondary-button {
+  background: rgba(13, 14, 18, 0.5);
+  border: 1px solid #30333C;
+  color: #E2E8F0;
+}
+
+.secondary-button:hover {
+  background: rgba(124, 58, 237, 0.1);
+  border-color: #7C3AED;
+}
+
+.download-status {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+
+/* =========================================
+   ALERT
+========================================= */
 
 .alert {
   padding: 12px 16px;
@@ -192,25 +405,35 @@ body {
 }
 
 .alert.error {
-  background: #32191F;
+  background: rgba(127, 29, 29, 0.2);
   border: 1px solid #5C2832;
   color: #FCA5A5;
 }
 
 .alert.success {
-  background: #14251D;
+  background: rgba(20, 83, 45, 0.2);
   border: 1px solid #25523B;
   color: #86EFAC;
 }
 
+
+/* =========================================
+   RESULT TEXT
+========================================= */
+
 .result pre {
   white-space: pre-wrap;
-  background: #0D0E12;
+  background: rgba(13, 14, 18, 0.65);
   border: 1px solid #292B33;
   padding: 18px;
   border-radius: 10px;
   color: #CBD5E1;
 }
+
+
+/* =========================================
+   FOOTER
+========================================= */
 
 footer {
   text-align: center;
@@ -220,9 +443,19 @@ footer {
   background: #0D0E12;
 }
 
+
+/* =========================================
+   MUTED TEXT
+========================================= */
+
 .muted {
-  color: #64748B;
+  color: #94A3B8;
 }
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
 
 @media (max-width: 800px) {
   .nav {
@@ -242,5 +475,32 @@ footer {
 
   .hero {
     padding: 30px 0;
+  }
+
+  .container {
+    padding: 35px 20px;
+  }
+}
+
+
+@media (max-width: 500px) {
+  .container {
+    padding: 25px 16px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .hero h1 {
+    font-size: 2.3rem;
+  }
+
+  .image-info {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column;
   }
 }
