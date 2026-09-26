@@ -5,11 +5,19 @@
 {% block content %}
 
 <style>
+    /* =========================================
+       EXTRACT PAGE
+    ========================================= */
+
     .extract-container {
         max-width: 750px;
         margin: 40px auto;
         padding: 20px;
     }
+
+    /* =========================================
+       HEADER
+    ========================================= */
 
     .extract-header {
         text-align: center;
@@ -18,34 +26,83 @@
 
     .extract-header h1 {
         font-size: 30px;
-        margin-bottom: 10px;
+        margin: 0 0 10px;
+        color: #E2E8F0;
     }
 
     .extract-header p {
-        color: var(--muted, #777);
+        color: #94A3B8;
         line-height: 1.6;
+        margin: 0;
     }
+
+    /* =========================================
+       EXTRACT FORM
+    ========================================= */
 
     .extract-form {
         padding: 25px;
         border-radius: 14px;
         margin-bottom: 25px;
+
+        background: rgba(26, 28, 35, 0.65);
+        border: 1px solid rgba(124, 58, 237, 0.15);
     }
 
     .extract-form label {
         display: block;
         font-weight: 600;
         margin: 15px 0 8px;
+        color: #E2E8F0;
     }
 
     .extract-form input[type="file"],
     .extract-form input[type="password"] {
         width: 100%;
         box-sizing: border-box;
+
         padding: 12px;
-        border: 1px solid var(--border, #ddd);
+
+        background: rgba(13, 14, 18, 0.7);
+        color: #E2E8F0;
+
+        border: 1px solid #30333C;
         border-radius: 8px;
+
         margin-bottom: 10px;
+
+        font-family: inherit;
+    }
+
+    .extract-form input[type="file"]:focus,
+    .extract-form input[type="password"]:focus {
+        outline: none;
+        border-color: #7C3AED;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+    }
+
+    .extract-form input::placeholder {
+        color: #64748B;
+    }
+
+    .extract-form input[type="file"]::file-selector-button {
+        margin-right: 10px;
+        padding: 8px 12px;
+
+        border: none;
+        border-radius: 7px;
+
+        background: #7C3AED;
+        color: #FFFFFF;
+
+        font-weight: 600;
+        cursor: pointer;
+
+        transition: 0.2s ease;
+    }
+
+    .extract-form input[type="file"]::file-selector-button:hover {
+        background: #A855F7;
     }
 
     .extract-form button {
@@ -53,13 +110,57 @@
         margin-top: 15px;
     }
 
+    /* =========================================
+       FLASH MESSAGE
+    ========================================= */
+
+    .flash-container {
+        margin-bottom: 20px;
+    }
+
+    .flash {
+        padding: 13px 16px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+
+    .flash.error {
+        background: rgba(127, 29, 29, 0.2);
+        color: #FCA5A5;
+        border: 1px solid #7F1D1D;
+    }
+
+    .flash.success {
+        background: rgba(20, 83, 45, 0.2);
+        color: #86EFAC;
+        border: 1px solid #25523B;
+    }
+
+    /* =========================================
+       EXTRACTION RESULT
+    ========================================= */
+
     .extract-result {
         padding: 25px;
         border-radius: 14px;
-        border: 1px solid #16a34a;
-        background: var(--card, #fff);
+
+        background: rgba(26, 28, 35, 0.65);
+        border: 1px solid rgba(34, 197, 94, 0.45);
+
         animation: appear 0.3s ease;
+
+        box-shadow:
+            0 8px 30px rgba(0, 0, 0, 0.18),
+            0 0 0 1px rgba(34, 197, 94, 0.03);
     }
+
+    .extract-result:hover {
+        border-color: rgba(34, 197, 94, 0.6);
+    }
+
+    /* =========================================
+       RESULT HEADING
+    ========================================= */
 
     .result-heading {
         display: flex;
@@ -71,12 +172,20 @@
     .success-icon {
         width: 42px;
         height: 42px;
+
+        flex-shrink: 0;
+
         display: flex;
         align-items: center;
         justify-content: center;
+
         border-radius: 50%;
-        background: #dcfce7;
-        color: #15803d;
+
+        background: rgba(34, 197, 94, 0.15);
+        color: #86EFAC;
+
+        border: 1px solid rgba(34, 197, 94, 0.2);
+
         font-size: 23px;
         font-weight: bold;
     }
@@ -84,76 +193,126 @@
     .result-heading h2 {
         margin: 0;
         font-size: 21px;
+        color: #E2E8F0 !important;
     }
 
     .result-heading p {
         margin: 5px 0 0;
-        color: var(--muted, #777);
+        color: #94A3B8 !important;
         font-size: 14px;
     }
+
+    /* =========================================
+       MESSAGE
+    ========================================= */
 
     .message-label {
         display: block;
         font-weight: 600;
         margin-bottom: 10px;
+
+        color: #E2E8F0 !important;
     }
 
     .message-box {
         width: 100%;
         min-height: 150px;
         box-sizing: border-box;
+
         padding: 15px;
-        border: 1px solid var(--border, #ddd);
+
+        border: 1px solid #30333C;
         border-radius: 10px;
-        background: var(--background, #f8fafc);
-        color: var(--text, #222);
+
+        background: rgba(13, 14, 18, 0.7);
+        color: #E2E8F0;
+
         font-family: inherit;
         font-size: 15px;
         line-height: 1.7;
+
         resize: vertical;
         overflow-wrap: anywhere;
+
+        transition: 0.25s ease;
     }
 
-    .result-actions {
+    .message-box:focus {
+        outline: none;
+        border-color: #7C3AED;
+
+        box-shadow:
+            0 0 0 3px rgba(124, 58, 237, 0.12);
+    }
+
+    /* =========================================
+       RESULT ACTIONS
+    ========================================= */
+
+    .extract-result .result-actions {
         display: flex;
+        flex-direction: column;
         gap: 10px;
-        margin-top: 15px;
-        flex-wrap: wrap;
+
+        margin-top: 20px;
     }
 
-    .result-actions button {
-        flex: 1;
-        min-width: 140px;
+    .extract-result .result-actions button {
+        width: 100%;
+        min-height: 41px;
+
+        color: #FFFFFF;
+
+        text-align: center;
+        cursor: pointer;
     }
 
-    .flash-container {
-        margin-bottom: 20px;
+    /* Tombol utama */
+    .extract-result .result-actions .button {
+        background: #7C3AED;
+        border: 1px solid transparent;
     }
 
-    .flash {
-        padding: 13px 16px;
-        border-radius: 8px;
-        margin-bottom: 10px;
+    .extract-result .result-actions .button:hover {
+        background: #A855F7;
+        transform: translateY(-1px);
     }
 
-    .flash.error {
-        background: #fee2e2;
-        color: #991b1b;
-        border: 1px solid #fecaca;
+    /* Tombol hapus */
+    .extract-result .result-actions .button:last-child {
+        background: rgba(13, 14, 18, 0.55);
+        border: 1px solid #30333C;
+        color: #CBD5E1;
     }
+
+    .extract-result .result-actions .button:last-child:hover {
+        background: rgba(124, 58, 237, 0.1);
+        border-color: #7C3AED;
+        color: #E2E8F0;
+    }
+
+    /* =========================================
+       ANIMATION
+    ========================================= */
 
     @keyframes appear {
         from {
             opacity: 0;
             transform: translateY(10px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
         }
     }
 
+    /* =========================================
+       RESPONSIVE
+    ========================================= */
+
     @media (max-width: 600px) {
+
         .extract-container {
             margin: 20px auto;
             padding: 12px;
@@ -168,6 +327,14 @@
             padding: 18px;
         }
 
+        .result-heading {
+            align-items: flex-start;
+        }
+
+        .result-heading h2 {
+            font-size: 18px;
+        }
+
         .result-actions {
             flex-direction: column;
         }
@@ -178,17 +345,58 @@
     }
 </style>
 
+
 <div class="extract-container">
 
+    <!-- =========================================
+         HEADER
+    ========================================== -->
+
     <div class="extract-header">
+
+        <div class="eyebrow">
+            SECRET MESSAGE EXTRACTION
+        </div>
+
         <h1>Extract Message</h1>
+
         <p>
             Ekstrak pesan rahasia dari gambar yang telah
             diproses menggunakan SecretPic.
         </p>
+
     </div>
 
-    <!-- FORM EKSTRAKSI -->
+
+    <!-- =========================================
+         FLASH MESSAGE
+    ========================================== -->
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% if messages %}
+
+            <div class="flash-container">
+
+                {% for category, message in messages %}
+
+                    <div class="flash {{ category }}">
+                        {{ message }}
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+    {% endwith %}
+
+
+    <!-- =========================================
+         FORM EKSTRAKSI
+    ========================================== -->
+
     <form
         method="POST"
         action="{{ url_for('extract') }}"
@@ -196,7 +404,9 @@
         class="card extract-form"
     >
 
-        <label for="image">Stego Image</label>
+        <label for="image">
+            Stego Image
+        </label>
 
         <input
             type="file"
@@ -206,7 +416,10 @@
             required
         >
 
-        <label for="key">Stego-key</label>
+
+        <label for="key">
+            Stego-key
+        </label>
 
         <input
             type="password"
@@ -216,41 +429,46 @@
             required
         >
 
-        <button type="submit" class="button">
+
+        <button
+            type="submit"
+            class="button"
+        >
             Ekstrak Pesan
         </button>
 
     </form>
 
-    <!-- PESAN ERROR -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="flash-container">
-                {% for category, message in messages %}
-                    <div class="flash {{ category }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
 
-    <!-- HASIL EKSTRAKSI -->
+    <!-- =========================================
+         HASIL EKSTRAKSI
+    ========================================== -->
+
     {% if extracted_message is not none %}
 
         <section class="card extract-result">
 
             <div class="result-heading">
-                <div class="success-icon">✓</div>
+
+                <div class="success-icon">
+                    ✓
+                </div>
 
                 <div>
-                    <h2>Pesan Berhasil Diekstrak</h2>
+
+                    <h2>
+                        Pesan Berhasil Diekstrak
+                    </h2>
+
                     <p>
                         Pesan rahasia berhasil ditemukan
                         dan didekripsi.
                     </p>
+
                 </div>
+
             </div>
+
 
             <label
                 for="extracted-message"
@@ -259,13 +477,16 @@
                 Pesan Rahasia
             </label>
 
+
             <textarea
                 id="extracted-message"
                 class="message-box"
                 readonly
             >{{ extracted_message }}</textarea>
 
+
             <div class="result-actions">
+
                 <button
                     type="button"
                     class="button"
@@ -274,6 +495,7 @@
                     Salin Pesan
                 </button>
 
+
                 <button
                     type="button"
                     class="button"
@@ -281,6 +503,7 @@
                 >
                     Hapus Tampilan
                 </button>
+
             </div>
 
         </section>
@@ -289,51 +512,76 @@
 
 </div>
 
+
 <script>
+
     function copyMessage() {
-        const message = document.getElementById(
-            "extracted-message"
-        );
+
+        const message =
+            document.getElementById("extracted-message");
 
         if (!message) {
             return;
         }
 
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(message.value)
+
+        if (
+            navigator.clipboard &&
+            window.isSecureContext
+        ) {
+
+            navigator.clipboard
+                .writeText(message.value)
+
                 .then(() => {
                     alert("Pesan berhasil disalin!");
                 })
+
                 .catch(() => {
                     fallbackCopy(message);
                 });
+
         } else {
+
             fallbackCopy(message);
+
         }
     }
 
+
     function fallbackCopy(message) {
+
         message.focus();
         message.select();
 
-        const success = document.execCommand("copy");
+        const success =
+            document.execCommand("copy");
 
         if (success) {
+
             alert("Pesan berhasil disalin!");
+
         } else {
-            alert("Gagal menyalin pesan. Silakan salin secara manual.");
+
+            alert(
+                "Gagal menyalin pesan. Silakan salin secara manual."
+            );
+
         }
     }
 
+
     function clearMessage() {
-        const message = document.getElementById(
-            "extracted-message"
-        );
+
+        const message =
+            document.getElementById("extracted-message");
 
         if (message) {
             message.value = "";
         }
+
     }
+
 </script>
 
 {% endblock %}
