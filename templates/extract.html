@@ -4,25 +4,199 @@
 
 {% block content %}
 
-<div class="container">
-    <h1>Extract Message</h1>
+<style>
+    .extract-container {
+        max-width: 750px;
+        margin: 40px auto;
+        padding: 20px;
+    }
 
-    <p>
-        Ekstrak pesan rahasia dari gambar yang telah
-        disisipi menggunakan SecretPic.
-    </p>
+    .extract-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
 
-    <!-- FORM EXTRACT -->
+    .extract-header h1 {
+        font-size: 30px;
+        margin-bottom: 10px;
+    }
+
+    .extract-header p {
+        color: var(--muted, #777);
+        line-height: 1.6;
+    }
+
+    .extract-form {
+        padding: 25px;
+        border-radius: 14px;
+        margin-bottom: 25px;
+    }
+
+    .extract-form label {
+        display: block;
+        font-weight: 600;
+        margin: 15px 0 8px;
+    }
+
+    .extract-form input[type="file"],
+    .extract-form input[type="password"] {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        border: 1px solid var(--border, #ddd);
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .extract-form button {
+        width: 100%;
+        margin-top: 15px;
+    }
+
+    .extract-result {
+        padding: 25px;
+        border-radius: 14px;
+        border: 1px solid #16a34a;
+        background: var(--card, #fff);
+        animation: appear 0.3s ease;
+    }
+
+    .result-heading {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .success-icon {
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 23px;
+        font-weight: bold;
+    }
+
+    .result-heading h2 {
+        margin: 0;
+        font-size: 21px;
+    }
+
+    .result-heading p {
+        margin: 5px 0 0;
+        color: var(--muted, #777);
+        font-size: 14px;
+    }
+
+    .message-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .message-box {
+        width: 100%;
+        min-height: 150px;
+        box-sizing: border-box;
+        padding: 15px;
+        border: 1px solid var(--border, #ddd);
+        border-radius: 10px;
+        background: var(--background, #f8fafc);
+        color: var(--text, #222);
+        font-family: inherit;
+        font-size: 15px;
+        line-height: 1.7;
+        resize: vertical;
+        overflow-wrap: anywhere;
+    }
+
+    .result-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+    }
+
+    .result-actions button {
+        flex: 1;
+        min-width: 140px;
+    }
+
+    .flash-container {
+        margin-bottom: 20px;
+    }
+
+    .flash {
+        padding: 13px 16px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .flash.error {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+
+    @keyframes appear {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 600px) {
+        .extract-container {
+            margin: 20px auto;
+            padding: 12px;
+        }
+
+        .extract-header h1 {
+            font-size: 25px;
+        }
+
+        .extract-form,
+        .extract-result {
+            padding: 18px;
+        }
+
+        .result-actions {
+            flex-direction: column;
+        }
+
+        .result-actions button {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="extract-container">
+
+    <div class="extract-header">
+        <h1>Extract Message</h1>
+        <p>
+            Ekstrak pesan rahasia dari gambar yang telah
+            diproses menggunakan SecretPic.
+        </p>
+    </div>
+
+    <!-- FORM EKSTRAKSI -->
     <form
         method="POST"
         action="{{ url_for('extract') }}"
         enctype="multipart/form-data"
-        class="card form"
+        class="card extract-form"
     >
 
-        <label for="image">
-            Stego Image
-        </label>
+        <label for="image">Stego Image</label>
 
         <input
             type="file"
@@ -32,29 +206,23 @@
             required
         >
 
-        <label for="key">
-            Stego-key
-        </label>
+        <label for="key">Stego-key</label>
 
         <input
             type="password"
             id="key"
             name="key"
-            placeholder="Masukkan key yang digunakan saat embedding"
+            placeholder="Masukkan key saat embedding"
             required
         >
 
-        <button
-            type="submit"
-            class="button"
-        >
+        <button type="submit" class="button">
             Ekstrak Pesan
         </button>
 
     </form>
 
-
-    <!-- FLASH MESSAGE -->
+    <!-- PESAN ERROR -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <div class="flash-container">
@@ -67,35 +235,53 @@
         {% endif %}
     {% endwith %}
 
-
     <!-- HASIL EKSTRAKSI -->
     {% if extracted_message is not none %}
 
-        <section class="card result">
+        <section class="card extract-result">
 
-            <h2>✓ Extraction Successful</h2>
+            <div class="result-heading">
+                <div class="success-icon">✓</div>
 
-            <p>
-                Pesan rahasia berhasil diekstrak.
-            </p>
+                <div>
+                    <h2>Pesan Berhasil Diekstrak</h2>
+                    <p>
+                        Pesan rahasia berhasil ditemukan
+                        dan didekripsi.
+                    </p>
+                </div>
+            </div>
 
-            <label for="extracted-message">
+            <label
+                for="extracted-message"
+                class="message-label"
+            >
                 Pesan Rahasia
             </label>
 
             <textarea
                 id="extracted-message"
-                rows="6"
+                class="message-box"
                 readonly
             >{{ extracted_message }}</textarea>
 
-            <button
-                type="button"
-                class="button"
-                onclick="copyMessage()"
-            >
-                Salin Pesan
-            </button>
+            <div class="result-actions">
+                <button
+                    type="button"
+                    class="button"
+                    onclick="copyMessage()"
+                >
+                    Salin Pesan
+                </button>
+
+                <button
+                    type="button"
+                    class="button"
+                    onclick="clearMessage()"
+                >
+                    Hapus Tampilan
+                </button>
+            </div>
 
         </section>
 
@@ -103,26 +289,51 @@
 
 </div>
 
-
-<!-- COPY MESSAGE -->
 <script>
-function copyMessage() {
-    const message = document.getElementById("extracted-message");
+    function copyMessage() {
+        const message = document.getElementById(
+            "extracted-message"
+        );
 
-    if (!message) {
-        return;
+        if (!message) {
+            return;
+        }
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(message.value)
+                .then(() => {
+                    alert("Pesan berhasil disalin!");
+                })
+                .catch(() => {
+                    fallbackCopy(message);
+                });
+        } else {
+            fallbackCopy(message);
+        }
     }
 
-    navigator.clipboard.writeText(message.value)
-        .then(() => {
+    function fallbackCopy(message) {
+        message.focus();
+        message.select();
+
+        const success = document.execCommand("copy");
+
+        if (success) {
             alert("Pesan berhasil disalin!");
-        })
-        .catch(() => {
-            message.select();
-            document.execCommand("copy");
-            alert("Pesan berhasil disalin!");
-        });
-}
+        } else {
+            alert("Gagal menyalin pesan. Silakan salin secara manual.");
+        }
+    }
+
+    function clearMessage() {
+        const message = document.getElementById(
+            "extracted-message"
+        );
+
+        if (message) {
+            message.value = "";
+        }
+    }
 </script>
 
 {% endblock %}
