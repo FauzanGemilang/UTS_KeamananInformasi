@@ -4,396 +4,242 @@
 
 {% block content %}
 
-<h1>Hide Message</h1>
+<section class="hero">
+    <span class="eyebrow">STEGANOGRAPHY</span>
+    <h1>Hide Message</h1>
+    <p>
+        Sembunyikan pesan rahasia di dalam gambar menggunakan
+        metode Least Significant Bit (LSB) dan enkripsi AES-GCM.
+    </p>
+</section>
 
-<p class="muted">
-  Format yang didukung: PNG, BMP, JPG, dan JPEG.
-  Hasil steganografi disimpan sebagai PNG agar data LSB tetap terjaga.
-</p>
+<!-- FORM HIDE MESSAGE -->
+<section class="card">
 
-<!-- =====================================================
-     FORM HIDE MESSAGE
-===================================================== -->
+    <h2>Sisipkan Pesan Rahasia</h2>
 
-<form
-  method="post"
-  enctype="multipart/form-data"
-  class="card form"
->
+    <p class="muted">
+        Pilih gambar, masukkan pesan rahasia, dan tentukan
+        stego-key untuk menyisipkan pesan.
+    </p>
 
-  <label>
-    Gambar
-
-    <input
-      type="file"
-      name="image"
-      accept=".png,.bmp,.jpg,.jpeg,image/png,image/jpeg,image/bmp"
-      required
+    <form
+        method="POST"
+        enctype="multipart/form-data"
+        class="form"
     >
-  </label>
 
-  <label>
-    Pesan rahasia
+        <!-- PILIH GAMBAR -->
+        <label for="image">
+            Gambar
 
-    <textarea
-      name="message"
-      rows="6"
-      required
-      placeholder="Tulis pesan rahasia..."
-    ></textarea>
-  </label>
+            <input
+                type="file"
+                id="image"
+                name="image"
+                accept=".png,.bmp,.jpg,.jpeg,image/png,image/bmp,image/jpeg"
+                required
+            >
+        </label>
 
-  <label>
-    Stego-key
+        <small class="muted">
+            Format yang didukung: PNG, BMP, JPG, dan JPEG.
+            Hasil steganografi akan disimpan dalam format PNG.
+        </small>
 
-    <input
-      type="password"
-      name="key"
-      required
-      placeholder="Masukkan stego-key"
-      autocomplete="off"
-    >
-  </label>
+        <!-- PREVIEW GAMBAR -->
+        <div id="image-preview-container" style="display:none;">
+            <p><strong>Pratinjau Gambar</strong></p>
 
-  <button
-    class="button"
-    type="submit"
-  >
-    🔐 Sisipkan Pesan
-  </button>
+            <img
+                id="image-preview"
+                class="preview"
+                alt="Pratinjau gambar yang dipilih"
+                style="max-height:350px; object-fit:contain;"
+            >
 
-</form>
+            <p id="image-name" class="muted"></p>
+        </div>
 
+        <!-- PESAN RAHASIA -->
+        <label for="message">
+            Pesan Rahasia
 
-<!-- =====================================================
-     RESULT
-===================================================== -->
+            <textarea
+                id="message"
+                name="message"
+                rows="6"
+                placeholder="Masukkan pesan rahasia..."
+                required
+            ></textarea>
+        </label>
 
-{% if result %}
+        <!-- STEGO KEY -->
+        <label for="key">
+            Stego-Key
 
-<section class="card result">
+            <input
+                type="password"
+                id="key"
+                name="key"
+                placeholder="Masukkan stego-key"
+                autocomplete="off"
+                required
+            >
+        </label>
 
-  <h2>Hasil Steganografi</h2>
+        <small class="muted">
+            Simpan stego-key dengan aman. Kamu memerlukan
+            kunci yang sama untuk mengekstrak pesan.
+        </small>
 
-  <div class="compare">
+        <!-- TOMBOL -->
+        <button type="submit" class="button">
+            Sisipkan Pesan
+        </button>
 
-    <!-- =================================================
-         IMAGE
-    ================================================== -->
-
-    <div>
-
-      <p>
-        <strong>Stego Image</strong>
-      </p>
-
-      <img
-        class="preview"
-        id="stegoPreview"
-        src="data:image/png;base64,{{ result.image_b64 }}"
-        alt="Stego Image"
-      >
-
-    </div>
-
-
-    <!-- =================================================
-         METRICS
-    ================================================== -->
-
-    <div>
-
-      <p>
-        <strong>MSE:</strong>
-        {{ "%.6f"|format(result.mse) }}
-      </p>
-
-      <p>
-        <strong>PSNR:</strong>
-        {{ "%.2f"|format(result.psnr) }}
-        dB
-      </p>
-
-      <p>
-        <strong>Kapasitas:</strong>
-        {{ result.capacity }}
-        byte
-      </p>
-
-      <p>
-        <strong>Payload:</strong>
-        {{ result.message_size }}
-        byte
-      </p>
-
-
-      <!-- =================================================
-           DOWNLOAD BUTTON
-      ================================================== -->
-
-      <button
-        type="button"
-        class="button"
-        id="downloadStego"
-      >
-        ⬇ Simpan Stego Image
-      </button>
-
-
-      <!-- =================================================
-           FALLBACK OPEN IMAGE
-      ================================================== -->
-
-      <a
-        id="openStego"
-        class="button secondary"
-        href="#"
-        target="_blank"
-        rel="noopener"
-        style="margin-top:10px;"
-      >
-        🖼 Buka Gambar
-      </a>
-
-
-      <p
-        id="downloadStatus"
-        class="muted"
-        style="margin-top:12px;"
-      >
-        File stego siap disimpan.
-      </p>
-
-    </div>
-
-  </div>
-
+    </form>
 </section>
 
 
-<!-- =====================================================
-     CROSS-DEVICE DOWNLOAD SCRIPT
-===================================================== -->
+<!-- HASIL STEGANOGRAFI -->
+{% if result %}
 
+<section class="card">
+
+    <h2>Hasil Steganografi</h2>
+
+    <p class="muted">
+        Pesan berhasil diproses. Unduh gambar stego
+        untuk digunakan pada proses ekstraksi.
+    </p>
+
+    <div class="compare">
+
+        <!-- GAMBAR STEGO -->
+        <div>
+            <p><strong>Stego Image</strong></p>
+
+            <img
+                class="preview"
+                src="data:image/png;base64,{{ result.image_b64 }}"
+                alt="Hasil gambar steganografi"
+                style="width:100%; max-height:400px; object-fit:contain;"
+            >
+
+            <p class="muted">
+                Nama file: {{ result.filename }}
+            </p>
+        </div>
+
+
+        <!-- INFORMASI HASIL -->
+        <div>
+
+            <h3>Informasi Gambar</h3>
+
+            <p>
+                <strong>MSE:</strong>
+                {{ "%.6f"|format(result.mse) }}
+            </p>
+
+            <p>
+                <strong>PSNR:</strong>
+                {{ "%.2f"|format(result.psnr) }} dB
+            </p>
+
+            <p>
+                <strong>Kapasitas:</strong>
+                {{ result.capacity }} byte
+            </p>
+
+            <p>
+                <strong>Ukuran Payload:</strong>
+                {{ result.message_size }} byte
+            </p>
+
+            <p>
+                <strong>Format:</strong>
+                PNG
+            </p>
+
+            <!-- DOWNLOAD -->
+            <a
+                class="button"
+                id="download-stego"
+                href="data:image/png;base64,{{ result.image_b64 }}"
+                download="{{ result.filename }}"
+            >
+                Download Stego PNG
+            </a>
+
+            <p class="muted" style="margin-top:12px;">
+                Pastikan gambar diunduh dalam format PNG.
+                Jangan mengubah ukuran atau mengompresnya
+                sebelum proses ekstraksi.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+
+<!-- JAVASCRIPT PREVIEW -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    const downloadButton =
-        document.getElementById("downloadStego");
+    const imageInput = document.getElementById("image");
+    const previewContainer = document.getElementById(
+        "image-preview-container"
+    );
+    const previewImage = document.getElementById("image-preview");
+    const imageName = document.getElementById("image-name");
 
-    const openButton =
-        document.getElementById("openStego");
-
-    const status =
-        document.getElementById("downloadStatus");
-
-    const base64Data =
-        "{{ result.image_b64 }}";
-
-    const filename =
-        "{{ result.filename }}";
-
-
-    // ==================================================
-    // BASE64 -> BLOB
-    // ==================================================
-
-    function base64ToBlob(
-        base64,
-        contentType = "image/png"
-    ) {
-
-        const binaryString =
-            atob(base64);
-
-        const length =
-            binaryString.length;
-
-        const bytes =
-            new Uint8Array(length);
-
-        for (
-            let i = 0;
-            i < length;
-            i++
-        ) {
-
-            bytes[i] =
-                binaryString.charCodeAt(i);
-        }
-
-        return new Blob(
-            [bytes],
-            {
-                type: contentType
-            }
-        );
+    if (!imageInput) {
+        return;
     }
 
+    imageInput.addEventListener("change", function () {
 
-    // ==================================================
-    // CREATE BLOB URL
-    // ==================================================
+        const file = this.files[0];
 
-    const blob =
-        base64ToBlob(
-            base64Data,
-            "image/png"
-        );
-
-    const blobUrl =
-        URL.createObjectURL(blob);
-
-
-    // ==================================================
-    // OPEN IMAGE
-    // ==================================================
-
-    openButton.href =
-        blobUrl;
-
-
-    // ==================================================
-    // DOWNLOAD FUNCTION
-    // ==================================================
-
-    downloadButton.addEventListener(
-        "click",
-        async function () {
-
-            status.textContent =
-                "Menyiapkan file...";
-
-
-            // ------------------------------------------
-            // METHOD 1
-            // WEB SHARE API
-            // ------------------------------------------
-
-            try {
-
-                const file =
-                    new File(
-                        [blob],
-                        filename,
-                        {
-                            type: "image/png"
-                        }
-                    );
-
-
-                if (
-                    navigator.share &&
-                    navigator.canShare &&
-                    navigator.canShare({
-                        files: [file]
-                    })
-                ) {
-
-                    await navigator.share({
-                        files: [file],
-                        title: "Stego Image",
-                        text: "Stego image dari SecretPic"
-                    });
-
-
-                    status.textContent =
-                        "File siap disimpan.";
-
-
-                    return;
-                }
-
-            } catch (error) {
-
-                /*
-                 * User mungkin menutup Share Sheet.
-                 * Jangan hentikan proses.
-                 */
-            }
-
-
-            // ------------------------------------------
-            // METHOD 2
-            // STANDARD BROWSER DOWNLOAD
-            // ------------------------------------------
-
-            try {
-
-                const link =
-                    document.createElement("a");
-
-                link.href =
-                    blobUrl;
-
-                link.download =
-                    filename;
-
-                link.style.display =
-                    "none";
-
-                document.body.appendChild(
-                    link
-                );
-
-                link.click();
-
-                link.remove();
-
-
-                status.textContent =
-                    "Download dimulai. "
-                    + "Periksa folder Downloads "
-                    + "atau Files.";
-
-                return;
-
-            } catch (error) {
-
-                console.error(
-                    "Download error:",
-                    error
-                );
-            }
-
-
-            // ------------------------------------------
-            // METHOD 3
-            // OPEN IMAGE
-            // ------------------------------------------
-
-            status.textContent =
-                "Download otomatis tidak tersedia. "
-                + "Gambar dibuka di halaman baru.";
-
-            window.open(
-                blobUrl,
-                "_blank",
-                "noopener"
-            );
-
+        if (!file) {
+            previewContainer.style.display = "none";
+            previewImage.removeAttribute("src");
+            return;
         }
-    );
 
+        const allowedTypes = [
+            "image/png",
+            "image/bmp",
+            "image/jpeg"
+        ];
 
-    // ==================================================
-    // CLEAN UP
-    // ==================================================
-
-    window.addEventListener(
-        "beforeunload",
-        function () {
-
-            URL.revokeObjectURL(
-                blobUrl
-            );
-
+        if (!allowedTypes.includes(file.type)) {
+            alert("Format gambar harus PNG, BMP, JPG, atau JPEG.");
+            this.value = "";
+            previewContainer.style.display = "none";
+            return;
         }
-    );
+
+        const imageUrl = URL.createObjectURL(file);
+
+        previewImage.onload = function () {
+            URL.revokeObjectURL(imageUrl);
+        };
+
+        previewImage.src = imageUrl;
+        imageName.textContent =
+            file.name + " (" + (file.size / 1024).toFixed(2) + " KB)";
+
+        previewContainer.style.display = "block";
+    });
 
 });
 </script>
-
-{% endif %}
 
 {% endblock %}
