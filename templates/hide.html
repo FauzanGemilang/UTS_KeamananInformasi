@@ -13,9 +13,7 @@
     </p>
 </section>
 
-<!-- FORM HIDE MESSAGE -->
 <section class="card">
-
     <h2>Sisipkan Pesan Rahasia</h2>
 
     <p class="muted">
@@ -27,9 +25,8 @@
         method="POST"
         enctype="multipart/form-data"
         class="form"
+        id="hide-form"
     >
-
-        <!-- PILIH GAMBAR -->
         <label for="image">
             Gambar
 
@@ -47,7 +44,6 @@
             Hasil steganografi akan disimpan dalam format PNG.
         </small>
 
-        <!-- PREVIEW GAMBAR -->
         <div id="image-preview-container" style="display:none;">
             <p><strong>Pratinjau Gambar</strong></p>
 
@@ -61,7 +57,6 @@
             <p id="image-name" class="muted"></p>
         </div>
 
-        <!-- PESAN RAHASIA -->
         <label for="message">
             Pesan Rahasia
 
@@ -74,7 +69,6 @@
             ></textarea>
         </label>
 
-        <!-- STEGO KEY -->
         <label for="key">
             Stego-Key
 
@@ -93,35 +87,42 @@
             kunci yang sama untuk mengekstrak pesan.
         </small>
 
-        <!-- TOMBOL -->
-        <button type="submit" class="button">
+        <button
+            type="submit"
+            class="button"
+            id="submit-button"
+        >
             Sisipkan Pesan
         </button>
 
+        <p
+            id="processing-message"
+            class="muted"
+            style="display:none;"
+        >
+            Sedang memproses gambar. Mohon tunggu...
+        </p>
     </form>
 </section>
 
 
-<!-- HASIL STEGANOGRAFI -->
 {% if result %}
 
-<section class="card">
-
+<section class="card" id="result-section">
     <h2>Hasil Steganografi</h2>
 
     <p class="muted">
-        Pesan berhasil diproses. Unduh gambar stego
+        Pesan berhasil disisipkan. Unduh gambar stego
         untuk digunakan pada proses ekstraksi.
     </p>
 
     <div class="compare">
-
-        <!-- GAMBAR STEGO -->
         <div>
             <p><strong>Stego Image</strong></p>
 
             <img
                 class="preview"
+                id="stego-preview"
                 src="data:image/png;base64,{{ result.image_b64 }}"
                 alt="Hasil gambar steganografi"
                 style="width:100%; max-height:400px; object-fit:contain;"
@@ -132,10 +133,7 @@
             </p>
         </div>
 
-
-        <!-- INFORMASI HASIL -->
         <div>
-
             <h3>Informasi Gambar</h3>
 
             <p>
@@ -145,7 +143,11 @@
 
             <p>
                 <strong>PSNR:</strong>
-                {{ "%.2f"|format(result.psnr) }} dB
+                {% if result.psnr == "inf" %}
+                    Tak terhingga
+                {% else %}
+                    {{ "%.2f"|format(result.psnr) }} dB
+                {% endif %}
             </p>
 
             <p>
@@ -163,7 +165,6 @@
                 PNG
             </p>
 
-            <!-- DOWNLOAD -->
             <a
                 class="button"
                 id="download-stego"
@@ -173,25 +174,127 @@
                 Download Stego PNG
             </a>
 
+            <a
+                class="button"
+                id="open-stego"
+                href="data:image/png;base64,{{ result.image_b64 }}"
+                target="_blank"
+                rel="noopener"
+                style="margin-top:10px;"
+            >
+                Buka Gambar
+            </a>
+
+            <button
+                type="button"
+                class="button"
+                id="share-stego"
+                style="margin-top:10px;"
+            >
+                Bagikan / Simpan
+            </button>
+
             <p class="muted" style="margin-top:12px;">
-                Pastikan gambar diunduh dalam format PNG.
+                Pastikan gambar disimpan dalam format PNG.
                 Jangan mengubah ukuran atau mengompresnya
                 sebelum proses ekstraksi.
             </p>
 
+            <p
+                id="download-status"
+                class="muted"
+                aria-live="polite"
+            ></p>
         </div>
-
     </div>
-
 </section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const imageData = {{ result.image_b64 | tojson }};
+    const filename = {{ result.filename | tojson }};
+
+    const downloadButton = document.getElementById("download-stego");
+    const shareButton = document.getElementById("share-stego");
+    const status = document.getElementById("download-status");
+
+    function createBlob() {
+        const binary = atob(imageData);
+        const bytes = new Uint8Array(binary.length);
+
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+
+        return new Blob([bytes], { type: "image/png" });
+    }
+
+    const blob = createBlob();
+    const objectUrl = URL.createObjectURL(blob);
+
+    downloadButton.href = objectUrl;
+    downloadButton.download = filename;
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(
+        navigator.userAgent
+    );
+
+    if (!isMobile) {
+        setTimeout(function () {
+            downloadButton.click();
+            status.textContent =
+                "Unduhan gambar stego telah dimulai.";
+        }, 500);
+    } else {
+        status.textContent =
+            "Jika unduhan tidak berjalan, gunakan tombol " +
+            "Buka Gambar atau Bagikan / Simpan.";
+    }
+
+    shareButton.addEventListener("click", async function () {
+        try {
+            const file = new File([blob], filename, {
+                type: "image/png"
+            });
+
+            if (
+                navigator.share &&
+                navigator.canShare &&
+                navigator.canShare({ files: [file] })
+            ) {
+                await navigator.share({
+                    files: [file],
+                    title: "SecretPic Stego Image",
+                    text: "Gambar hasil steganografi SecretPic"
+                });
+
+                status.textContent =
+                    "Menu berbagi telah dibuka.";
+            } else {
+                status.textContent =
+                    "Browser tidak mendukung berbagi file. " +
+                    "Gunakan tombol Download atau Buka Gambar.";
+            }
+        } catch (error) {
+            if (error.name !== "AbortError") {
+                status.textContent =
+                    "Gagal membuka menu berbagi. " +
+                    "Silakan gunakan tombol lainnya.";
+            }
+        }
+    });
+
+    window.addEventListener("beforeunload", function () {
+        URL.revokeObjectURL(objectUrl);
+    });
+});
+</script>
 
 {% endif %}
 
 
-<!-- JAVASCRIPT PREVIEW -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-
     const imageInput = document.getElementById("image");
     const previewContainer = document.getElementById(
         "image-preview-container"
@@ -199,46 +302,67 @@ document.addEventListener("DOMContentLoaded", function () {
     const previewImage = document.getElementById("image-preview");
     const imageName = document.getElementById("image-name");
 
-    if (!imageInput) {
-        return;
+    const form = document.getElementById("hide-form");
+    const submitButton = document.getElementById("submit-button");
+    const processingMessage = document.getElementById(
+        "processing-message"
+    );
+
+    let previewUrl = null;
+
+    if (imageInput) {
+        imageInput.addEventListener("change", function () {
+            const file = this.files[0];
+
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                previewUrl = null;
+            }
+
+            if (!file) {
+                previewContainer.style.display = "none";
+                previewImage.removeAttribute("src");
+                imageName.textContent = "";
+                return;
+            }
+
+            const allowedTypes = [
+                "image/png",
+                "image/bmp",
+                "image/jpeg"
+            ];
+
+            if (!allowedTypes.includes(file.type)) {
+                alert(
+                    "Format gambar harus PNG, BMP, JPG, atau JPEG."
+                );
+
+                this.value = "";
+                previewContainer.style.display = "none";
+                previewImage.removeAttribute("src");
+                return;
+            }
+
+            previewUrl = URL.createObjectURL(file);
+            previewImage.src = previewUrl;
+
+            imageName.textContent =
+                file.name + " (" +
+                (file.size / 1024).toFixed(2) +
+                " KB)";
+
+            previewContainer.style.display = "block";
+        });
     }
 
-    imageInput.addEventListener("change", function () {
+    if (form) {
+        form.addEventListener("submit", function () {
+            submitButton.disabled = true;
+            submitButton.textContent = "Memproses...";
 
-        const file = this.files[0];
-
-        if (!file) {
-            previewContainer.style.display = "none";
-            previewImage.removeAttribute("src");
-            return;
-        }
-
-        const allowedTypes = [
-            "image/png",
-            "image/bmp",
-            "image/jpeg"
-        ];
-
-        if (!allowedTypes.includes(file.type)) {
-            alert("Format gambar harus PNG, BMP, JPG, atau JPEG.");
-            this.value = "";
-            previewContainer.style.display = "none";
-            return;
-        }
-
-        const imageUrl = URL.createObjectURL(file);
-
-        previewImage.onload = function () {
-            URL.revokeObjectURL(imageUrl);
-        };
-
-        previewImage.src = imageUrl;
-        imageName.textContent =
-            file.name + " (" + (file.size / 1024).toFixed(2) + " KB)";
-
-        previewContainer.style.display = "block";
-    });
-
+            processingMessage.style.display = "block";
+        });
+    }
 });
 </script>
 
