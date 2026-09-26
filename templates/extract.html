@@ -1,20 +1,128 @@
 {% extends "base.html" %}
+
 {% block title %}Extract Message — SecretPic{% endblock %}
+
 {% block content %}
-<h1>Extract Message</h1>
-<form method="post" enctype="multipart/form-data" class="card form">
-  <label>Stego image
-    <input type="file" name="image" accept=".png,.bmp,.jpg,.jpeg" required>
-  </label>
-  <label>Stego-key
-    <input type="password" name="key" required placeholder="Masukkan key yang digunakan saat embedding">
-  </label>
-  <button class="button" type="submit">Ekstrak Pesan</button>
-</form>
-{% if extracted %}
-<section class="card result">
-  <h2>✓ Extraction Successful</h2>
-  <pre>{{ extracted }}</pre>
-</section>
-{% endif %}
+
+<div class="container">
+    <h1>Extract Message</h1>
+
+    <p>
+        Ekstrak pesan rahasia dari gambar yang telah
+        disisipi menggunakan SecretPic.
+    </p>
+
+    <!-- FORM EXTRACT -->
+    <form
+        method="POST"
+        action="{{ url_for('extract') }}"
+        enctype="multipart/form-data"
+        class="card form"
+    >
+
+        <label for="image">
+            Stego Image
+        </label>
+
+        <input
+            type="file"
+            id="image"
+            name="image"
+            accept=".png,.bmp,.jpg,.jpeg"
+            required
+        >
+
+        <label for="key">
+            Stego-key
+        </label>
+
+        <input
+            type="password"
+            id="key"
+            name="key"
+            placeholder="Masukkan key yang digunakan saat embedding"
+            required
+        >
+
+        <button
+            type="submit"
+            class="button"
+        >
+            Ekstrak Pesan
+        </button>
+
+    </form>
+
+
+    <!-- FLASH MESSAGE -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+
+    <!-- HASIL EKSTRAKSI -->
+    {% if extracted_message is not none %}
+
+        <section class="card result">
+
+            <h2>✓ Extraction Successful</h2>
+
+            <p>
+                Pesan rahasia berhasil diekstrak.
+            </p>
+
+            <label for="extracted-message">
+                Pesan Rahasia
+            </label>
+
+            <textarea
+                id="extracted-message"
+                rows="6"
+                readonly
+            >{{ extracted_message }}</textarea>
+
+            <button
+                type="button"
+                class="button"
+                onclick="copyMessage()"
+            >
+                Salin Pesan
+            </button>
+
+        </section>
+
+    {% endif %}
+
+</div>
+
+
+<!-- COPY MESSAGE -->
+<script>
+function copyMessage() {
+    const message = document.getElementById("extracted-message");
+
+    if (!message) {
+        return;
+    }
+
+    navigator.clipboard.writeText(message.value)
+        .then(() => {
+            alert("Pesan berhasil disalin!");
+        })
+        .catch(() => {
+            message.select();
+            document.execCommand("copy");
+            alert("Pesan berhasil disalin!");
+        });
+}
+</script>
+
 {% endblock %}
