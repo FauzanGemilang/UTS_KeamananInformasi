@@ -1,136 +1,708 @@
 import hashlib
-import struct
-from PIL import Image
 import io
+import math
+import struct
+
+from PIL import Image
+
+
+# =========================================================
+# CONFIGURATION
+# =========================================================
 
 MAGIC = b"LSB1"
-HEADER_SIZE = 8  # magic (4) + payload length (4)
 
-def _image_from_bytes(data: bytes):
-    return Image.open(io.BytesIO(data)).convert("RGB")
+# 4 byte MAGIC + 4 byte panjang payload
+HEADER_SIZE = 8
+
+
+# =========================================================
+# IMAGE HANDLING
+# =========================================================
+
+def _image_from_bytes(data: bytes) -> Image.Image:
+    """
+    Membuka gambar dari bytes dan mengubahnya menjadi RGB.
+    """
+
+    try:
+        return Image.open(
+            io.BytesIO(data)
+        ).convert("RGB")
+
+    except Exception as exc:
+        raise ValueError(
+            "File bukan gambar yang valid "
+            "atau format gambar tidak didukung."
+        ) from exc
+
 
 def _image_to_png_bytes(img: Image.Image) -> bytes:
-    out = io.BytesIO()
-    img.save(out, format="PNG")
-    return out.getvalue()
+    """
+    Mengubah image menjadi bytes PNG.
+    """
 
-def _positions(total_channels: int, key: str):
-    # Deterministic Fisher-Yates shuffle using SHA-256 based PRNG.
-    # This is intended for an academic demonstration, not production cryptography.
-    seed = hashlib.sha256(key.encode("utf-8")).digest()
-    state = int.from_bytes(seed, "big")
-    positions = list(range(total_channels))
-    for i in range(total_channels - 1, 0, -1):
-        state = (1103515245 * state + 12345) & ((1 << 256) - 1)
-        j = state % (i + 1)
-        positions[i], positions[j] = positions[j], positions[i]
-    return positions
+    output = io.BytesIO()
 
-def capacity_bytes(image_bytes: bytes, bits_per_channel: int = 1) -> int:
+    img.save(
+        output,
+        format="PNG"
+    )
+
+    return output.getvalue()
+
+
+def _flattened_channels(img: Image.Image) -> bytearray:
+    """
+    Mengambil seluruh channel RGB secara langsung sebagai bytearray.
+
+    Karena gambar sudah dipastikan RGB:
+        panjang data = width × height × 3
+
+    Pendekatan ini menghindari penggunaan getdata()
+    yang deprecated pada Pillow versi baru.
+    """
+
+    return bytearray(
+        img.tobytes()
+    )
+
+
+# =========================================================
+# DETERMINISTIC POSITION GENERATOR
+# =========================================================
+
+def _position_parameters(
+    total_channels: int,
+    key: str
+):
+    """
+    Membuat parameter posisi deterministik
+    berdasarkan stego-key.
+
+    Tidak membuat list posisi seluruh gambar.
+    """
+
+    if total_channels <= 0:
+        raise ValueError(
+            "Gambar tidak memiliki channel."
+        )
+
+    seed = hashlib.sha256(
+        key.encode("utf-8")
+    ).digest()
+
+    start = (
+        int.from_bytes(
+            seed[:8],
+            byteorder="big"
+        )
+        % total_channels
+    )
+
+    step = (
+        int.from_bytes(
+            seed[8:16],
+            byteorder="big"
+        )
+        % total_channels
+    )
+
+    if step == 0:
+        step = 1
+
+    # Pastikan step relatif prima dengan
+    # total channel agar seluruh posisi
+    # dapat dilewati tanpa pengulangan.
+    while math.gcd(
+        step,
+        total_channels
+    ) != 1:
+
+        step += 1
+
+        if step >= total_channels:
+            step = 1
+
+    return start, step
+
+
+def _position(
+    index: int,
+    total_channels: int,
+    start: int,
+    step: int
+) -> int:
+    """
+    Menghasilkan posisi channel.
+    """
+
+    return (
+        start
+        + (index * step)
+    ) % total_channels
+
+
+# =========================================================
+# CAPACITY
+# =========================================================
+
+def capacity_bytes(
+    image_bytes: bytes,
+    bits_per_channel: int = 1
+) -> int:
+    """
+    Menghitung kapasitas payload maksimum dalam byte.
+
+    bits_per_channel:
+        1 -> satu bit per channel
+        2 -> dua bit per channel
+    """
+
     if bits_per_channel not in (1, 2):
-        raise ValueError("bits_per_channel harus 1 atau 2.")
-    img = _image_from_bytes(image_bytes)
-    channels = img.width * img.height * 3
-    total_bits = channels * bits_per_channel
-    return max(0, total_bits // 8 - HEADER_SIZE)
+        raise ValueError(
+            "bits_per_channel harus 1 atau 2."
+        )
 
-def _payload_to_bits(payload: bytes):
+    img = _image_from_bytes(
+        image_bytes
+    )
+
+    total_channels = (
+        img.width
+        * img.height
+        * 3
+    )
+
+    total_bits = (
+        total_channels
+        * bits_per_channel
+    )
+
+    capacity = (
+        total_bits // 8
+        - HEADER_SIZE
+    )
+
+    return max(
+        0,
+        capacity
+    )
+
+
+# =========================================================
+# BITS <-> BYTES
+# =========================================================
+
+def _payload_to_bits(
+    payload: bytes
+):
+    """
+    Mengubah bytes menjadi bit.
+    """
+
     for byte in payload:
-        for shift in range(7, -1, -1):
-            yield (byte >> shift) & 1
 
-def embed_payload(image_bytes: bytes, payload: bytes, key: str, bits_per_channel: int = 1) -> bytes:
+        for shift in range(
+            7,
+            -1,
+            -1
+        ):
+
+            yield (
+                byte >> shift
+            ) & 1
+
+
+def _bits_to_bytes(
+    bits
+) -> bytes:
+    """
+    Mengubah bit menjadi bytes.
+    """
+
+    output = bytearray()
+
+    for i in range(
+        0,
+        len(bits),
+        8
+    ):
+
+        byte = 0
+
+        for bit in bits[
+            i:i + 8
+        ]:
+
+            byte = (
+                byte << 1
+            ) | bit
+
+        output.append(
+            byte
+        )
+
+    return bytes(output)
+
+
+# =========================================================
+# EMBED PAYLOAD
+# =========================================================
+
+def embed_payload(
+    image_bytes: bytes,
+    payload: bytes,
+    key: str,
+    bits_per_channel: int = 1
+) -> bytes:
+    """
+    Menyisipkan payload ke dalam gambar menggunakan LSB.
+    """
+
     if bits_per_channel not in (1, 2):
-        raise ValueError("bits_per_channel harus 1 atau 2.")
-    img = _image_from_bytes(image_bytes)
-    pixels = list(img.getdata())
-    channels = len(pixels) * 3
-    max_payload = channels * bits_per_channel // 8 - HEADER_SIZE
-    if len(payload) > max_payload:
-        raise ValueError(f"Pesan terlalu besar. Kapasitas maksimum sekitar {max_payload} byte.")
+        raise ValueError(
+            "bits_per_channel harus 1 atau 2."
+        )
 
-    packet = MAGIC + struct.pack(">I", len(payload)) + payload
-    bits = list(_payload_to_bits(packet))
-    if bits_per_channel == 2:
-        # Pack bits into 2-bit chunks for higher capacity.
-        values = []
-        for i in range(0, len(bits), 2):
-            a = bits[i]
-            b = bits[i+1] if i+1 < len(bits) else 0
-            values.append((a << 1) | b)
-        units = values
-    else:
+    if not key:
+        raise ValueError(
+            "Stego-key tidak boleh kosong."
+        )
+
+    # -----------------------------------------------------
+    # Buka gambar sebagai RGB
+    # -----------------------------------------------------
+
+    img = _image_from_bytes(
+        image_bytes
+    )
+
+    total_channels = (
+        img.width
+        * img.height
+        * 3
+    )
+
+    # -----------------------------------------------------
+    # Hitung kapasitas
+    # -----------------------------------------------------
+
+    max_payload = (
+        total_channels
+        * bits_per_channel
+        // 8
+        - HEADER_SIZE
+    )
+
+    if len(payload) > max_payload:
+        raise ValueError(
+            "Pesan terlalu besar. "
+            f"Kapasitas maksimum sekitar "
+            f"{max_payload} byte."
+        )
+
+    # -----------------------------------------------------
+    # Header + payload
+    # -----------------------------------------------------
+
+    packet = (
+        MAGIC
+        + struct.pack(
+            ">I",
+            len(payload)
+        )
+        + payload
+    )
+
+    # -----------------------------------------------------
+    # Convert packet -> bits
+    # -----------------------------------------------------
+
+    bits = list(
+        _payload_to_bits(
+            packet
+        )
+    )
+
+    # -----------------------------------------------------
+    # Bentuk unit 1-bit atau 2-bit
+    # -----------------------------------------------------
+
+    if bits_per_channel == 1:
+
         units = bits
 
-    flat = [c for p in pixels for c in p]
-    positions = _positions(channels, key)
-    mask = (1 << bits_per_channel) - 1
+    else:
 
-    for idx, value in enumerate(units):
-        pos = positions[idx]
-        flat[pos] = (flat[pos] & ~mask) | value
+        units = []
 
-    new_pixels = [tuple(flat[i:i+3]) for i in range(0, len(flat), 3)]
-    out = Image.new("RGB", img.size)
-    out.putdata(new_pixels)
-    return _image_to_png_bytes(out)
+        for i in range(
+            0,
+            len(bits),
+            2
+        ):
 
-def extract_payload(image_bytes: bytes, key: str, bits_per_channel: int = 1) -> bytes:
+            first = bits[i]
+
+            second = (
+                bits[i + 1]
+                if i + 1 < len(bits)
+                else 0
+            )
+
+            value = (
+                (first << 1)
+                | second
+            )
+
+            units.append(
+                value
+            )
+
+    # -----------------------------------------------------
+    # Generate posisi
+    # -----------------------------------------------------
+
+    start, step = _position_parameters(
+        total_channels,
+        key
+    )
+
+    # -----------------------------------------------------
+    # Ambil data RGB sebagai bytearray
+    # -----------------------------------------------------
+
+    flat = _flattened_channels(
+        img
+    )
+
+    # Pastikan panjang benar
+    if len(flat) != total_channels:
+        raise ValueError(
+            "Ukuran data pixel tidak sesuai "
+            "dengan dimensi gambar."
+        )
+
+    # -----------------------------------------------------
+    # Mask
+    # -----------------------------------------------------
+
+    mask = (
+        (1 << bits_per_channel)
+        - 1
+    )
+
+    # -----------------------------------------------------
+    # Embed
+    # -----------------------------------------------------
+
+    for index, value in enumerate(
+        units
+    ):
+
+        position = _position(
+            index,
+            total_channels,
+            start,
+            step
+        )
+
+        flat[position] = (
+            (
+                flat[position]
+                & ~mask
+            )
+            | value
+        )
+
+    # -----------------------------------------------------
+    # Build new image
+    # -----------------------------------------------------
+
+    output = Image.frombytes(
+        "RGB",
+        img.size,
+        bytes(flat)
+    )
+
+    # -----------------------------------------------------
+    # Output always PNG
+    # -----------------------------------------------------
+
+    return _image_to_png_bytes(
+        output
+    )
+
+
+# =========================================================
+# EXTRACT BITS
+# =========================================================
+
+def _extract_bits(
+    flat: bytearray,
+    total_channels: int,
+    start: int,
+    step: int,
+    count_units: int,
+    bits_per_channel: int
+):
+    """
+    Mengambil unit dari channel yang telah disisipi.
+    """
+
+    mask = (
+        (1 << bits_per_channel)
+        - 1
+    )
+
+    bits = []
+
+    for index in range(
+        count_units
+    ):
+
+        position = _position(
+            index,
+            total_channels,
+            start,
+            step
+        )
+
+        value = (
+            flat[position]
+            & mask
+        )
+
+        if bits_per_channel == 1:
+
+            bits.append(
+                value
+            )
+
+        else:
+
+            bits.append(
+                (value >> 1) & 1
+            )
+
+            bits.append(
+                value & 1
+            )
+
+    return bits
+
+
+# =========================================================
+# READ HEADER
+# =========================================================
+
+def _read_header(
+    flat: bytearray,
+    total_channels: int,
+    start: int,
+    step: int,
+    bits_per_channel: int
+) -> bytes:
+    """
+    Membaca header:
+        MAGIC + payload length
+    """
+
+    header_bits = (
+        HEADER_SIZE * 8
+    )
+
+    if bits_per_channel == 1:
+
+        required_units = header_bits
+
+    else:
+
+        required_units = (
+            header_bits // 2
+        )
+
+    bits = _extract_bits(
+        flat,
+        total_channels,
+        start,
+        step,
+        required_units,
+        bits_per_channel
+    )
+
+    bits = bits[
+        :header_bits
+    ]
+
+    return _bits_to_bytes(
+        bits
+    )
+
+
+# =========================================================
+# EXTRACT PAYLOAD
+# =========================================================
+
+def extract_payload(
+    image_bytes: bytes,
+    key: str,
+    bits_per_channel: int = 1
+) -> bytes:
+    """
+    Mengekstraksi payload dari stego image.
+    """
+
     if bits_per_channel not in (1, 2):
-        raise ValueError("bits_per_channel harus 1 atau 2.")
-    img = _image_from_bytes(image_bytes)
-    pixels = list(img.getdata())
-    channels = len(pixels) * 3
-    flat = [c for p in pixels for c in p]
-    positions = _positions(channels, key)
-    mask = (1 << bits_per_channel) - 1
+        raise ValueError(
+            "bits_per_channel harus 1 atau 2."
+        )
 
-    # Read enough units for header.
-    needed_header_bits = HEADER_SIZE * 8
+    if not key:
+        raise ValueError(
+            "Stego-key tidak boleh kosong."
+        )
+
+    # -----------------------------------------------------
+    # Buka image
+    # -----------------------------------------------------
+
+    img = _image_from_bytes(
+        image_bytes
+    )
+
+    total_channels = (
+        img.width
+        * img.height
+        * 3
+    )
+
+    # -----------------------------------------------------
+    # Ambil pixel data
+    # -----------------------------------------------------
+
+    flat = _flattened_channels(
+        img
+    )
+
+    if len(flat) != total_channels:
+        raise ValueError(
+            "Ukuran data pixel tidak sesuai "
+            "dengan dimensi gambar."
+        )
+
+    # -----------------------------------------------------
+    # Generate posisi yang sama
+    # -----------------------------------------------------
+
+    start, step = _position_parameters(
+        total_channels,
+        key
+    )
+
+    # -----------------------------------------------------
+    # Read header
+    # -----------------------------------------------------
+
+    header = _read_header(
+        flat,
+        total_channels,
+        start,
+        step,
+        bits_per_channel
+    )
+
+    if len(header) < HEADER_SIZE:
+        raise ValueError(
+            "Header payload tidak valid."
+        )
+
+    # -----------------------------------------------------
+    # Validate MAGIC
+    # -----------------------------------------------------
+
+    if header[:4] != MAGIC:
+
+        raise ValueError(
+            "Header tidak ditemukan. "
+            "Stego-key mungkin salah atau "
+            "file bukan stego image."
+        )
+
+    # -----------------------------------------------------
+    # Payload length
+    # -----------------------------------------------------
+
+    payload_length = struct.unpack(
+        ">I",
+        header[4:8]
+    )[0]
+
+    # -----------------------------------------------------
+    # Validate payload length
+    # -----------------------------------------------------
+
+    max_payload = capacity_bytes(
+        image_bytes,
+        bits_per_channel
+    )
+
+    if payload_length > max_payload:
+        raise ValueError(
+            "Panjang payload tidak valid."
+        )
+
+    # -----------------------------------------------------
+    # Total bits
+    # -----------------------------------------------------
+
+    total_payload_bytes = (
+        HEADER_SIZE
+        + payload_length
+    )
+
+    total_bits = (
+        total_payload_bytes
+        * 8
+    )
+
     if bits_per_channel == 1:
-        header_units = needed_header_bits
-        units = [(flat[positions[i]] & mask) for i in range(header_units)]
-        bits = units
-    else:
-        header_units = needed_header_bits // 2
-        values = [(flat[positions[i]] & mask) for i in range(header_units)]
-        bits = []
-        for value in values:
-            bits.extend([(value >> 1) & 1, value & 1])
 
-    header = bytearray()
-    for i in range(0, len(bits), 8):
-        byte = 0
-        for bit in bits[i:i+8]:
-            byte = (byte << 1) | bit
-        header.append(byte)
-
-    if bytes(header[:4]) != MAGIC:
-        raise ValueError("Header tidak ditemukan. Key mungkin salah atau file bukan stego image.")
-    payload_len = struct.unpack(">I", bytes(header[4:8]))[0]
-    total_bits = (HEADER_SIZE + payload_len) * 8
-    if bits_per_channel == 1:
         units_needed = total_bits
+
     else:
-        units_needed = (total_bits + 1) // 2
 
-    if units_needed > channels:
-        raise ValueError("Panjang payload tidak valid.")
+        units_needed = (
+            total_bits + 1
+        ) // 2
 
-    if bits_per_channel == 1:
-        all_bits = [(flat[positions[i]] & mask) for i in range(units_needed)]
-    else:
-        all_bits = []
-        for i in range(units_needed):
-            value = flat[positions[i]] & mask
-            all_bits.extend([(value >> 1) & 1, value & 1])
-        all_bits = all_bits[:total_bits]
+    # -----------------------------------------------------
+    # Extract
+    # -----------------------------------------------------
 
-    data = bytearray()
-    for i in range(0, len(all_bits), 8):
-        byte = 0
-        for bit in all_bits[i:i+8]:
-            byte = (byte << 1) | bit
-        data.append(byte)
+    bits = _extract_bits(
+        flat,
+        total_channels,
+        start,
+        step,
+        units_needed,
+        bits_per_channel
+    )
 
-    return bytes(data[HEADER_SIZE:])
+    bits = bits[
+        :total_bits
+    ]
+
+    data = _bits_to_bytes(
+        bits
+    )
+
+    if len(data) < HEADER_SIZE:
+        raise ValueError(
+            "Payload tidak lengkap."
+        )
+
+    return data[
+        HEADER_SIZE:
+    ]
